@@ -26,15 +26,16 @@
     </div>
 
     <script>
+        // 修复：input.files → input.files[0]
         function previewImage(input) {
             const preview = document.getElementById('preview');
-            if (input.files && input.files) {
+            if (input.files && input.files[0]) { // 取第一个文件
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     preview.src = e.target.result;
                     preview.style.display = 'block';
                 }
-                reader.readAsDataURL(input.files);
+                reader.readAsDataURL(input.files[0]); // 取第一个文件
             }
         }
 
@@ -49,20 +50,22 @@
             resultDiv.innerHTML = "正在努力计算中... ⏳";
 
             const formData = new FormData();
-            formData.append('file', fileInput.files);
+            formData.append('file', fileInput.files[0]); // 修复：取第一个文件
 
             try {
                 const response = await fetch('/detect', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.error_code === 0 && data.result) {
-                    // 获取返回结果中的颜值分数 [3, 4]
-                    const beauty = data.result.face_list.beauty;
+                    // 修复：face_list 是数组，取第一个元素
+                    const beauty = data.result.face_list[0].beauty;
                     resultDiv.innerHTML = `您的颜值分数为：<br><span class="score">${beauty}</span> / 100`;
                 } else {
-                    resultDiv.innerHTML = "检测失败：" + (data.error_msg || "未检测到人脸 [5]");
+                    resultDiv.innerHTML = "检测失败：" + (data.error_msg || "未检测到人脸");
                 }
             } catch (error) {
+                // 优化：打印错误到控制台，方便排查
+                console.error("请求失败：", error);
                 resultDiv.innerHTML = "服务器连接出错，请稍后再试。";
             }
         }
