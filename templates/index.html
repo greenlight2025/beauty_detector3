@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 颜值大检定</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', sans-serif; text-align: center; background-color: #f4f7f6; padding: 50px; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-block; }
+        #preview { max-width: 300px; margin-top: 20px; border-radius: 10px; display: none; }
+        #result { margin-top: 20px; font-size: 24px; color: #333; }
+        .score { font-size: 48px; color: #ff4757; font-weight: bold; }
+        button { background-color: #1e90ff; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #3742fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ AI 颜值大检定 ✨</h1>
+        <p>上传一张照片，看看你的魅力值是多少！</p>
+        <input type="file" id="imageInput" accept="image/*" onchange="previewImage(this)">
+        <br>
+        <img id="preview" src="" alt="预览图">
+        <br><br>
+        <button onclick="detectFace()">开始检定</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function previewImage(input) {
+            const preview = document.getElementById('preview');
+            if (input.files && input.files) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(input.files);
+            }
+        }
+
+        async function detectFace() {
+            const fileInput = document.getElementById('imageInput');
+            if (fileInput.files.length === 0) {
+                alert("请先选择一张照片！");
+                return;
+            }
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = "正在努力计算中... ⏳";
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files);
+
+            try {
+                const response = await fetch('/detect', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if (data.error_code === 0 && data.result) {
+                    // 获取返回结果中的颜值分数 [3, 4]
+                    const beauty = data.result.face_list.beauty;
+                    resultDiv.innerHTML = `您的颜值分数为：<br><span class="score">${beauty}</span> / 100`;
+                } else {
+                    resultDiv.innerHTML = "检测失败：" + (data.error_msg || "未检测到人脸 [5]");
+                }
+            } catch (error) {
+                resultDiv.innerHTML = "服务器连接出错，请稍后再试。";
+            }
+        }
+    </script>
+</body>
+</html>
